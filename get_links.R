@@ -1,7 +1,8 @@
 #! /usr/bin/env Rscript
-# http://www.livejournal.com/view/?type=month&user=oldadmiral&y=2017&m=3&format=light
 
-args <- commandArgs(trailingOnly = TRUE)
+args <- 
+  # "oldadmiral"
+  commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 1) {
   stop("Blog name must be supplied (input something like oldadmiral).n", call.=FALSE)
@@ -24,15 +25,25 @@ link_years <-
   html_attr("href") %>% 
   str_subset(str_c("^https://", args[1], ".livejournal.com/[:digit:]{4}/$"))
 
-link_days <- 
-  link_years %>% 
-  map(get_links, pattern = str_c("^https://", args[1], ".livejournal.com/[:digit:]{4}/[:digit:]{2}/[:digit:]{2}/$")) %>% 
+link_month <- 
+  link_years %>%
+  map(get_links, pattern = str_c("^https://", args[1], ".livejournal.com/[:digit:]{4}/[:digit:]{2}/$")) %>%
   flatten_chr()
 
-link_articles <- 
-  link_days %>% 
-  map(get_links, pattern = str_c("^https://", args[1], ".livejournal.com/[:digit:]+\\.html$")) %>% 
+# http://www.livejournal.com/view/?type=month&format=light&user=oldadmiral&y=2017&m=03
+
+link_articles <-
+  str_c(
+    "http://www.livejournal.com/view/?type=month&format=light&user=", 
+    args[1], "&y=", 
+    link_month %>% 
+      unique() %>% 
+      str_extract("[:digit:]{4}/[:digit:]{2}") %>% 
+      str_replace("/", "&m=")
+  ) %>%
+  map(get_links, pattern = str_c("^https://", args[1], ".livejournal.com/[:digit:]+\\.html$")) %>%
   flatten_chr()
 
 link_articles %>% 
+  sort() %>% unique() %>% 
   write_lines(str_c(args[1], ".txt"))
